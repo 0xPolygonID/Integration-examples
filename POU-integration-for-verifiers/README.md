@@ -18,6 +18,7 @@ This project is a demo backend and static UI for Privado Proof of Uniqueness (PO
 3. **Start the backend server**
 
    ```bash
+   cd js
    node index.js
    ```
 
