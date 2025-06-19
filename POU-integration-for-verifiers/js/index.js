@@ -37,6 +37,7 @@ app.use(express.static("../static"));
 // In-memory maps for session and user verification
 const requestMap = new Map(); // sessionId -> authRequest
 const userVerificationMap = new Map(); // userDid -> { sessionId, verified }
+const statusMap = new Map(); // requestId -> status
 
 // The nullifier must be a positive BigInt for the proof request.
 // Here, we use the first 16 hex digits of a UUIDv4 as a random positive BigInt.
@@ -86,11 +87,28 @@ app.get("/api/verification-request", async (req, res) => {
     // Store auth request in map associated with session ID
     requestMap.set(sessionId, request);
 
+    // Initialize status as pending
+    statusMap.set(proofRequest.id, "pending");
+
     return res.status(200).json(request);
   } catch (err) {
     console.error("Error in /api/verification-request:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
+});
+
+/**
+ * GET /api/status/:id
+ * Returns the verification status for a given request ID.
+ */
+app.get("/api/status/:id", (req, res) => {
+  const requestId = parseInt(req.params.id);
+  const status = statusMap.get(requestId) || "not_found";
+
+  return res.status(200).json({
+    requestId: requestId,
+    status: status,
+  });
 });
 
 /**
