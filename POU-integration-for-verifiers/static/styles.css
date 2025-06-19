@@ -1,0 +1,93 @@
+/* Global Styles */
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  color: #222;
+}
+
+/* Container Styles */
+.container {
+  max-width: 420px;
+  margin: 80px auto;
+  padding: 40px 24px 32px 24px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(60, 60, 120, 0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Header Styles */
+.header {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+/* Subheader Styles */
+.subheader {
+  font-size: 1.1rem;
+  color: #555;
+  margin-bottom: 32px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Button Styles */
+#button {
+  display: none; /* Shown by JS when ready */
+  padding: 16px 36px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color:  #000000;
+  background: linear-gradient(90deg, #74F526 0%, #9AFE5B 100%);
+  border: none;
+  border-radius: 32px;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(116, 245, 38, 0.15);
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  outline: none;
+}
+
+#button:hover, #button:focus {
+  background: linear-gradient(90deg, #5edc1f 0%, #7be13a 100%);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 24px rgba(116, 245, 38, 0.18);
+  color: #000000
+  ;
+}
+
+/* QR Code Styles */
+#qrcode {
+  margin-top: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.5); /* Add shadow for a card-like effect */
+  padding: 20px;
+  width: fit-content;
+}
+
+/* Responsive Styles */
+@media (max-width: 600px) {
+  .container {
+    margin: 32px 8px;
+    padding: 24px 8px 20px 8px;
+  }
+  .header {
+    font-size: 1.3rem;
+  }
+  .subheader {
+    font-size: 1rem;
+  }
+  #button {
+    font-size: 1rem;
+    padding: 12px 18px;
+  }
+}

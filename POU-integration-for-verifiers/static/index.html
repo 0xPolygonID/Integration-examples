@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privado ID Verification Demo</title>
+  <!-- External CSS for styling -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!--
+      Example integration: Add a "Verify with Privado ID" call-to-action button to your website.
+      This button will redirect users to the Privado web wallet with a universal link for verification.
+      See index.js for how the universal link is configured.
+    -->
+    <div class="header">Verify Your Uniqueness with Privado ID</div>
+    <div class="subheader">
+      To register for the airdrop, click the button below and complete verification in your Privado wallet.<br>
+      <span style="font-size:0.95em;color:#888;">(This is a demo of how you can add a universal link CTA to your own site.)</span>
+    </div>
+    <!-- Universal Link CTA Button -->
+    <a id="button" href="#" target="_blank" class="action-button" aria-label="Verify with Privado Wallet"> Verify with Privado</a>
+  </div>
+
+  <footer style="text-align:center; margin-top:32px; color:#aaa; font-size:0.95em;">
+  </footer>
+
+  <!-- Script to configure the universal link button -->
+  <script src="index.js"></script>
+</body>
+</html>
