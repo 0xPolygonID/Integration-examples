@@ -20,9 +20,12 @@ const { auth, resolver } = require("@iden3/js-iden3-auth");
 const getRawBody = require("raw-body");
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const { CircuitId, AtomicQueryV3PubSignals } = require('@0xpolygonid/js-sdk');
 
 const app = express();
 const port = process.env.PORT || 8080;
+
+const byteEncoder = new TextEncoder();
 
 // Security middleware
 app.use(helmet());
@@ -36,7 +39,7 @@ app.use(express.static("../static"));
 
 // In-memory maps for session and user verification
 const requestMap = new Map(); // sessionId -> authRequest
-const userVerificationMap = new Map(); // userDid -> { sessionId, verified }
+const userVerificationMap = new Map(); // userDid -> { sessionId, verified, nullifier }
 
 // The nullifier must be a positive BigInt for the proof request.
 // Here, we use the first 16 hex digits of a UUIDv4 as a random positive BigInt.
@@ -101,69 +104,96 @@ app.get("/api/verification-request", async (req, res) => {
 app.post("/api/callback", async (req, res) => {
   console.log("/callback called")
 
-    // Validate sessionId
-    const sessionId = req.query.sessionId;
-    if (!sessionId) {
-      return res.status(400).json({ error: "Missing sessionId" });
-    }
+  // Validate sessionId
+  const sessionId = req.query.sessionId;
+  if (!sessionId) {
+    return res.status(400).json({ error: "Missing sessionId" });
+  }
 
-    // Get JWZ token params from the post request
-    const raw = await getRawBody(req);
-    const tokenStr = raw.toString().trim();
+  // Get JWZ token params from the post request
+  const raw = await getRawBody(req);
+  const tokenStr = raw.toString().trim();
 
-    // Fetch authRequest from sessionID
-    const authRequest = requestMap.get(sessionId);
-    if (!authRequest) {
-      return res.status(400).json({ error: "Invalid or expired sessionId" });
-    }
+  // Fetch authRequest from sessionID
+  const authRequest = requestMap.get(sessionId);
+  if (!authRequest) {
+    return res.status(400).json({ error: "Invalid or expired sessionId" });
+  }
 
-    // Set up resolvers for supported networks
-    const resolvers = {
-      ["billions:main"]: new resolver.EthStateResolver(
-        process.env.BILLIONS_RPC_URL,
-        process.env.BILLIONS_CONTRACT
-      ),
-      ["privado:main"]: new resolver.EthStateResolver(
-        process.env.PRIVADO_RPC_URL,
-        process.env.PRIVADO_CONTRACT
-      )
+  // Set up resolvers for supported networks
+  const resolvers = {
+    ["billions:main"]: new resolver.EthStateResolver(
+      process.env.BILLIONS_RPC_URL,
+      process.env.BILLIONS_CONTRACT
+    ),
+    ["privado:main"]: new resolver.EthStateResolver(
+      process.env.PRIVADO_RPC_URL,
+      process.env.PRIVADO_CONTRACT
+    )
+  };
+
+  // Execute verification
+  const verifier = await auth.Verifier.newVerifier({
+    stateResolver: resolvers,
+    circuitsDir: path.join(__dirname, process.env.KEY_DIR || "../keys"),
+    ipfsGatewayURL: process.env.IPFS_GATEWAY || "https://ipfs.io",
+  });
+
+  let authResponse;
+  try {
+    const opts = {
+      AcceptedStateTransitionDelay: 5 * 60 * 1000, // 5 minute
     };
+    authResponse = await verifier.fullVerify(tokenStr, authRequest, opts);
 
-    // Execute verification
-    const verifier = await auth.Verifier.newVerifier({
-      stateResolver: resolvers,
-      circuitsDir: path.join(__dirname, process.env.KEY_DIR || "../keys"),
-      ipfsGatewayURL: process.env.IPFS_GATEWAY || "https://ipfs.io",
-    });
+    // Find the nullifier proof in the response
+    const nullifierProof = authResponse.body.scope.find(
+      (s) => s.circuitId === CircuitId.AtomicQueryV3
+    );
 
-    try {
-      const opts = {
-        AcceptedStateTransitionDelay: 5 * 60 * 1000, // 5 minute
-      };
-      authResponse = await verifier.fullVerify(tokenStr, authRequest, opts);
+    if (!nullifierProof) {
+      return res.status(400).json({ error: "No valid nullifier proof found in response." });
+    }
 
-          // Prevent replay attack: check if this userDid is already verified
-      if (userVerificationMap.has(authResponse.from) && userVerificationMap.get(authResponse.from).verified) {
-        return res.status(400).json({ message: "User with this did has been verified already." });
+    // Parse public signals from the proof
+    const pubSignals = new AtomicQueryV3PubSignals().pubSignalsUnmarshal(
+      byteEncoder.encode(JSON.stringify(nullifierProof.pub_signals))
+    );
+
+
+    // logic to prevent replay attack using nullifier
+
+    // Extract user identifier and nullifier
+    const userIdentifier = authResponse.from;
+    const nullifier = pubSignals.nullifier;
+
+    // Check and store verification info in a map
+    if (userVerificationMap.has(userIdentifier)) {
+      const existing = userVerificationMap.get(userIdentifier);
+      if (existing.nullifier === nullifier) {
+        return res.status(400).json({message: "User already registered with the same nullifier." });
+      } else {
+        return res.status(400).json({ message: "Incorrect nullifier for the given user." });
       }
-      console.log(`=== User ${authResponse.from} Successfully Verified ===`);
-
-
-      userVerificationMap.set(authResponse.from, {
+    } else {
+      userVerificationMap.set(userIdentifier, {
         sessionId: sessionId,
-        verified: true
+        verified: true,
+        nullifier: nullifier
       });
+      console.log(`User ${userIdentifier} is verified successfully`);
     }
-    
-    catch (error) {
-      return res.status(500).send(error);
-    }
-    return res
-      .status(200)
-      .set("Content-Type", "application/json")
-      .send(authResponse);
 
-  })
+  } catch (error) {
+    console.error("Error in /api/callback:", error);
+    return res.status(500).send(error.message);
+  }
+  return res
+    .status(200)
+    .set("Content-Type", "application/json")
+    .send(authResponse);
+});
+
 // Start the server
 const server = app.listen(port, () => {
   console.log(`Privado verifier backend running on port ${port}`);
