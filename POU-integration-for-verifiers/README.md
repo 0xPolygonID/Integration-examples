@@ -1,4 +1,4 @@
-# Privado Verifier Backend Example
+# Verifier Backend Example for POU verifications
 
 This project is a demo backend and static UI for Privado Proof of Uniqueness (POU) verification. It allows you to generate verification requests and verify zero-knowledge proofs from wallets using the Privado protocol.
 
