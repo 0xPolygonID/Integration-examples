@@ -87,7 +87,6 @@ app.get("/api/verification-request", async (req, res) => {
       "circuitId": "credentialAtomicQueryV3-beta.1",
       "id":  sessionId,
       "params": {
-        // Must be a stringified positive BigInt
         "nullifierSessionId": nullifier.toString()
       },
       "query": {
@@ -175,8 +174,7 @@ app.post("/api/callback", async (req, res) => {
       AcceptedStateTransitionDelay: 5 * 60 * 1000, // 5 minute
     };
     authResponse = await verifier.fullVerify(tokenStr, authRequest, opts);
-
-
+  
     // Prevent replay attack: check if this user's nullifier is already verified
     const nullifierProof = authResponse.body.scope.find(
       (s) => s.circuitId === CircuitId.AtomicQueryV3 && s.id === sessionId
@@ -199,7 +197,6 @@ app.post("/api/callback", async (req, res) => {
     userVerificationMap.set(nullifier, {
       sessionId: sessionId,
       verified: true,
-      nullifier: nullifier
     });
     
     // Update status to success after successful verification
