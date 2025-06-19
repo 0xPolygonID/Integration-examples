@@ -1,4 +1,4 @@
-# Verifier Backend Example for POU verifications for an Airdrop
+# Verifier Backend Example for POU verification for an Airdrop
 
 This project is a demo backend and static UI for integrating Proof of Uniqueness (POU) verification. It allows you to generate verification requests and verify zero-knowledge proofs from wallets using the Privado ID protocol.
 
