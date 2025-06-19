@@ -20,16 +20,26 @@ const { auth, resolver } = require("@iden3/js-iden3-auth");
 const getRawBody = require("raw-body");
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const { CircuitId, AtomicQueryV3PubSignals } = require('@0xpolygonid/js-sdk');
+const { randomInt } = require('crypto');
 
 const app = express();
 const port = process.env.PORT || 8080;
+const byteEncoder = new TextEncoder();
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin:'*', // Set to your frontend domain in production
+  origin: '*', // Set to your frontend domain in production
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
 }));
 app.use(rateLimit({ windowMs: 1 * 60 * 1000, max: 100 })); // 100 requests/minute
+
+// Body parsing middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Serve static files (e.g., QR code page)
 app.use(express.static("../static"));
@@ -52,23 +62,30 @@ app.get("/api/verification-request", async (req, res) => {
   try {
     
     const hostUrl = process.env.HOST_URL; //host url to this verifier
-    const sessionId = uuidv4();
+    const sessionId = randomInt(10000)
     const callbackURL = "/api/callback";
-    const audience = process.env.AUDIENCE_DID;  // Audience is the verifier's DID
 
-    if (!hostUrl || !audience) {
-      return res.status(500).json({ error: "Server misconfiguration: HOST_URL or AUDIENCE_DID missing" });
+    if (!hostUrl) {
+      return res.status(500).json({ error: "Server misconfiguration: HOST_URL is missing" });
+    }
+
+    if (!process.env.AUDIENCE_DID) {
+      return res.status(500).json({ error: "Server misconfiguration: AUDIENCE_DID is missing" });
+    }
+
+    if (!process.env.ALLOWED_ISSUER) {
+      return res.status(500).json({ error: "Server misconfiguration: ALLOWED_ISSUER is missing" });
     }
 
     const uri = `${hostUrl}${callbackURL}?sessionId=${sessionId}`;
 
     // Generate request for basic authentication
-    const request = auth.createAuthorizationRequest("Verification of Uniqueness", audience, uri);
+    const request = auth.createAuthorizationRequest("Verification of Uniqueness", process.env.AUDIENCE_DID, uri);
 
     // Add request for a specific proof
     const proofRequest = {
       "circuitId": "credentialAtomicQueryV3-beta.1",
-      "id": 1,
+      "id":  sessionId,
       "params": {
         // Must be a stringified positive BigInt
         "nullifierSessionId": nullifier.toString()
@@ -118,11 +135,9 @@ app.get("/api/status/:id", (req, res) => {
  */
 app.post("/api/callback", async (req, res) => {
   console.log("/callback called")
-
-    // Validate sessionId
-    const sessionId = req.query.sessionId;
-    if (!sessionId) {
-      return res.status(400).json({ error: "Missing sessionId" });
+    const sessionId = parseInt(req.query.sessionId);
+    if (isNaN(sessionId)) {
+      return res.status(400).json({ error: "Invalid sessionId format" });
     }
 
     // Get JWZ token params from the post request
@@ -160,17 +175,36 @@ app.post("/api/callback", async (req, res) => {
       };
       authResponse = await verifier.fullVerify(tokenStr, authRequest, opts);
 
-          // Prevent replay attack: check if this userDid is already verified
-      if (userVerificationMap.has(authResponse.from) && userVerificationMap.get(authResponse.from).verified) {
+      // Prevent replay attack: check if this user's nullifier is already verified
+      const nullifierProof = authResponse.body.scope.find(
+        (s) => s.circuitId === CircuitId.AtomicQueryV3 && s.id === sessionId
+      );
+      if (!nullifierProof) {
+        return res.status(400).json({ error: "No valid nullifier proof found in response." });
+      }
+
+      const pubSignals = new AtomicQueryV3PubSignals().pubSignalsUnmarshal(
+        byteEncoder.encode(JSON.stringify(nullifierProof.pub_signals))
+      );
+
+      const nullifier = pubSignals.nullifier;
+
+      if (userVerificationMap.has(nullifier) && userVerificationMap.get(nullifier).verified) {
         return res.status(400).json({ message: "User with this did has been verified already." });
       }
       console.log(`=== User ${authResponse.from} Successfully Verified ===`);
 
-
-      userVerificationMap.set(authResponse.from, {
+      userVerificationMap.set(nullifier, {
         sessionId: sessionId,
         verified: true
       });
+      
+      // Update status to success after successful verification
+      // Get the proof request ID from the authRequest
+      const proofRequestId = authRequest.body.scope.find(s => s.circuitId === "credentialAtomicQueryV3-beta.1")?.id;
+      if (proofRequestId) {
+        statusMap.set(proofRequestId, "success");
+      }
     }
     
     catch (error) {

@@ -15,7 +15,7 @@ function pollStatus(requestId) {
           console.log("Verification completed successfully!");
           if (
             confirm(
-              "✅ Verification completed successfully!\nWould you like to reload the page?"
+              "✅ Verification completed successfully!\nReload the page."
             )
           ) {
             window.location.reload();
@@ -55,6 +55,11 @@ window.onload = () => {
             const encodedRequest = btoa(JSON.stringify(data));
             linkButton.href = `https://wallet-dev.privado.id/#i_m=${encodedRequest}`;
             linkButton.style.display = 'block'; // Show the universal link button
+            
+            // Start polling status after successful verification request
+            const requestId = data.body.scope[0].id; // Get the proof request ID
+            console.log('Starting status polling for request ID:', requestId);
+            pollStatus(requestId);
         })
         .catch(error => console.error('Error fetching data from API:', error));
 };
