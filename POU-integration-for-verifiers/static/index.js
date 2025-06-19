@@ -17,7 +17,7 @@ window.onload = () => {
         .then(data => {
             // Encode the data in Base64 for the universal link
             const encodedRequest = btoa(JSON.stringify(data));
-            linkButton.href = `https://wallet-dev.privado.id/#i_m=${encodedRequest}`;
+            linkButton.href = `https://wallet.privado.id/#i_m=${encodedRequest}`;
             linkButton.style.display = 'block'; // Show the universal link button
         })
         .catch(error => console.error('Error fetching data from API:', error));
