@@ -18,7 +18,6 @@ This project is a demo backend and static UI for integrating Proof of Uniqueness
 3. **Start the backend server**
 
    ```bash
-   cd js
    node index.js
    ```
 
@@ -28,7 +27,7 @@ This project is a demo backend and static UI for integrating Proof of Uniqueness
 
    - Open your browser and go to: [http://localhost:8080](http://localhost:8080)
    - You will see a call-to-action button that demonstrates how to integrate Privado verification into your own site.
-
+   - Follow the link to generate the proof and verify using this verifier backend.
 
 
 ## License
