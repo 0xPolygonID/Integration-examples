@@ -162,7 +162,7 @@ app.post("/api/callback", async (req, res) => {
   // Set up resolvers for supported networks
   const resolvers = {
     ["billions:main"]: new resolver.EthStateResolver(
-      "https://rpc-mainnet.billions.network/",
+      "https://rpc-mainnet.billions.network",
       "0x3C9acB2205Aa72A05F6D77d708b5Cf85FCa3a896"
     ),
     ["privado:main"]: new resolver.EthStateResolver(
