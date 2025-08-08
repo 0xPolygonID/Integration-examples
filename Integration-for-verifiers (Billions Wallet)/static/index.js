@@ -1,6 +1,9 @@
 // Set the base URL for the API request
 const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
+// Store verification data globally for wallet button
+let verificationData = null;
+
 // On page load
 window.onload = () => {
   const qrCodeEl = document.getElementById('qrcode');
@@ -11,14 +14,25 @@ window.onload = () => {
       return response.json();
     })
     .then(data => {
+      // Store verification data for wallet button
+      verificationData = data;
+      
+      // Create the universal wallet URL using the ver (used for both QR code and button)
+      const jsonString = JSON.stringify(data);
+      const base64Data = btoa(jsonString);
+      const walletUrl = `https://wallet.billions.network/#i_m=${base64Data}`;
+      
       // Show and generate QR code
-      console.log("Verification request data:", data);
+      const qrCodeEl = document.getElementById('qrcode');
+      const walletButtonContainer = document.getElementById('walletButtonContainer');
+      
       qrCodeEl.style.display = 'block';
+      walletButtonContainer.style.display = 'block';
       
       // Check if QRCode library is loaded
       if (typeof QRCode !== 'undefined') {
         new QRCode(qrCodeEl, {
-          text: JSON.stringify(data),
+          text: walletUrl,
           width: 256,
           height: 256,
           correctLevel: QRCode.CorrectLevel.Q
@@ -33,6 +47,9 @@ window.onload = () => {
           true
         );
       }
+
+      // Setup wallet button click handler with universalURL
+      setupWalletButton(walletUrl);
 
       // Extract request ID and start polling
       // The request ID should be in the proof request scope
@@ -148,6 +165,41 @@ function pollStatus(requestId) {
   };
 
   checkStatus();
+}
+
+
+// Setup wallet button functionality
+function setupWalletButton(walletUrl) {
+  const walletBtn = document.getElementById('openWalletBtn');
+  
+  walletBtn.addEventListener('click', () => {
+    if (!verificationData) {
+      console.error('No verification data available');
+      showNotification(
+        'error',
+        'Data Error',
+        'Verification data is not available. Please refresh the page and try again.',
+        true
+      );
+      return;
+    }
+
+    try {
+      console.log('Opening Billions wallet with URL:', walletUrl);
+      
+      // Open the wallet URL in a new tab/window
+      window.open(walletUrl, '_blank');
+      
+    } catch (error) {
+      console.error('Error creating wallet URL:', error);
+      showNotification(
+        'error',
+        'URL Error',
+        'Failed to create wallet URL. Please try scanning the QR code instead.',
+        false
+      );
+    }
+  });
 }
 
 

@@ -86,11 +86,11 @@ app.get("/api/verification-request", async (req, res) => {
     const callbackURL = "/api/callback";
 
     if (!hostUrl) {
-      return res.status(500).json({ error: "Server misconfiguration: HOST_URL is missing" });
+      console.log("Server misconfiguration: HOST_URL is missing")
     }
 
     if (!process.env.VERIFIER_DID) {
-      return res.status(500).json({ error: "Server misconfiguration: VERIFIER_DID is missing" });
+      console.log("Server misconfiguration: VERIFIER_DID is missing");
     }
 
 
@@ -145,7 +145,7 @@ app.post("/api/callback", async (req, res) => {
   console.log("/callback called")
   const sessionId = parseInt(req.query.sessionId);
   if (isNaN(sessionId)) {
-    return res.status(400).json({ error: "Invalid sessionId format" });
+    return res.status(400).json({ message: "Invalid sessionId format" });
   }
 
   // Get JWZ token params from the post request
@@ -156,7 +156,7 @@ app.post("/api/callback", async (req, res) => {
   // Fetch authRequest from sessionID
   const authRequest = requestMap.get(sessionId);
   if (!authRequest) {
-    return res.status(400).json({ error: "Invalid or expired sessionId" });
+    return res.status(400).json({ message: "Invalid or expired sessionId" });
   }
 
   // Set up resolvers for supported networks
@@ -194,7 +194,7 @@ app.post("/api/callback", async (req, res) => {
       (s) => s.circuitId === "credentialAtomicQueryV3-beta.1" && s.id === sessionId
     );
     if (!nullifierProof) {
-      return res.status(400).json({ error: "No valid nullifier proof found in response." });
+      return res.status(400).json({ message: "No valid nullifier proof found in response." });
     }
 
     const pubSignals = new AtomicQueryV3PubSignals().pubSignalsUnmarshal(
