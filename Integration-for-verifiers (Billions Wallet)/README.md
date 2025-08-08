@@ -5,7 +5,7 @@ This project is a demo backend and static UI for integrating verifications via B
 ## 📋 Supported Verification Types
 
 - **POH (Proof of Humanity)**: Verify users are real humans via `Human` credential
-- **POU (Proof of Uniqueness)**: Verify user uniqueness via `Uniquness` credential
+- **POU (Proof of Uniqueness)**: Verify user uniqueness via `Uniqueness` credential
 - **POVH (Proof of Verified Humaity)** Verify that users are `Verified human` via Verified Human (passport/Aadhaar) cred
 ## Quick Start
 
