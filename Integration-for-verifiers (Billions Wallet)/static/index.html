@@ -20,48 +20,72 @@
     
     <div class="demo-badge">Developer Integration Demo</div>
 
-
     <div class="subheader">
-      Complete your verification using the Billions app to continue.
+      Complete your verification using the Billions to continue.
     </div>
 
-    <!-- Download Section -->
-    <div class="download-section">
-      <div class="download-title">Step 1: Download Billions Mobile App</div>
-      <div class="app-store-container">
-        <a href="https://apps.apple.com/es/app/billions/id6742451067" target="_blank" class="app-store-btn">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09997 22C7.78997 22.05 6.79997 20.68 5.95997 19.47C4.24997 17 2.93997 12.45 4.69997 9.39C5.56997 7.87 7.13997 6.91 8.85997 6.88C10.15 6.85 11.36 7.74 12.1 7.74C12.83 7.74 14.31 6.66 15.87 6.84C16.5 6.87 18.27 7.15 19.35 8.93C19.27 8.99 17.83 9.88 17.85 11.73C17.87 14.03 19.75 14.86 19.77 14.87C19.75 14.93 19.39 16.22 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/>
-          </svg>
-          <div>
-            <div style="font-size: 10px; opacity: 0.8;">Get it on</div>
-            <div style="font-size: 14px; font-weight: 600;">App Store</div>
-          </div>
-        </a>
-        
-        <a href="https://play.google.com/store/apps/details?id=com.billions.app.mobile" target="_blank" class="app-store-btn">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
-          </svg>
-          <div>
-            <div style="font-size: 10px; opacity: 0.8;">Get it on</div>
-            <div style="font-size: 14px; font-weight: 600;">Google Play</div>
-          </div>
-        </a>
+    <!-- Option 1: Web Wallet -->
+    <div class="verification-option">
+      <div class="option-title"> Use Billions Web Wallet</div>
+      <div class="option-description">
+        Verify directly in your browser.
+      </div>
+      
+      <!-- Wallet Button -->
+      <div id="walletButtonContainer" class="wallet-button-container" style="display: none;">
+        <button id="openWalletBtn" class="wallet-btn">
+          Verify with Billions
+        </button>
       </div>
     </div>
 
-    <div class="divider"></div>
-
-    <div class="qr-section-title">Step 2: Scan QR Code to Verify</div>
-    <div class="subheader">
-      After downloading the app, scan the QR code below and follow the prompts to complete your verification.
+    <div class="divider-with-text">
+      <span>OR</span>
     </div>
-    
-    <div id="qrcode" style="display: none;"></div>
+
+    <!-- Option 2: Mobile App + QR -->
+    <div class="verification-option">
+      <div class="option-title">Use Billions Mobile App</div>
+      <div class="option-description">
+        Download the mobile app
+      </div>
+
+      <!-- Download Section -->
+      <div class="download-section">
+        <div class="app-store-container">
+          <a href="https://apps.apple.com/es/app/billions/id6742451067" target="_blank" class="app-store-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09997 22C7.78997 22.05 6.79997 20.68 5.95997 19.47C4.24997 17 2.93997 12.45 4.69997 9.39C5.56997 7.87 7.13997 6.91 8.85997 6.88C10.15 6.85 11.36 7.74 12.1 7.74C12.83 7.74 14.31 6.66 15.87 6.84C16.5 6.87 18.27 7.15 19.35 8.93C19.27 8.99 17.83 9.88 17.85 11.73C17.87 14.03 19.75 14.86 19.77 14.87C19.75 14.93 19.39 16.22 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/>
+            </svg>
+            <div>
+              <div style="font-size: 10px; opacity: 0.8;">Get it on</div>
+              <div style="font-size: 14px; font-weight: 600;">App Store</div>
+            </div>
+          </a>
+          
+          <a href="https://play.google.com/store/apps/details?id=com.billions.app.mobile" target="_blank" class="app-store-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
+            </svg>
+            <div>
+              <div style="font-size: 10px; opacity: 0.8;">Get it on</div>
+              <div style="font-size: 14px; font-weight: 600;">Google Play</div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- QR Code Section -->
+      <div class="qr-section">
+        <div class="option-description">
+          After downloading, scan this QR code:
+        </div>
+        <div id="qrcode" style="display: none;"></div>
+      </div>
+    </div>
 
     <div class="demo-description">
-      This is how you can add a CTA for end users on your frontend to verify using Billions.
+      This is how you can add a CTA for end users on your frontend for users to verify using Billions.
     </div>
   </div>
 
