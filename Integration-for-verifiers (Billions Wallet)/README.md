@@ -5,8 +5,8 @@ This project is a demo backend and static UI for integrating verifications via B
 ## 📋 Supported Verification Types
 
 - **POH (Proof of Humanity)**: Verify users are real humans via `Human` credential
-- **POU (Proof of Uniqueness)**: Verify user uniqueness via `Verified Human` credential
-
+- **POU (Proof of Uniqueness)**: Verify user uniqueness via `Uniqueness` credential
+- **POVH (Proof of Verified Humaity)** Verify that users are `Verified human` via Verified Human (passport/Aadhaar) cred
 ## Quick Start
 
 1. **Install dependencies**
@@ -45,8 +45,7 @@ You should see:
 
 1. **Open your browser** to `http://localhost:8080`
 2. **Reload** the page to start a session and invoke verification request.
-2. **Download the Billions app** using the provided links
-3. **Scan the QR code** with the Billions mobile app
+2. **Click** the button to continue flow on Billions Web Wallet or **Scan the QR after downloading the APP** to continue the flow on the native app.
 4. **Complete verification** in the app
 5. **See status update** on the web page
 

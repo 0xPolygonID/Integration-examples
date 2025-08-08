@@ -20,9 +20,9 @@ const VERIFICATION_CONFIGS = {
     }
   },
 
-  // Proof of Uniqueness Configuration
-  POU: {
-    name: "Verified Human",
+  // Proof of Verified Humanity Configuration
+  POVH: {
+    name: "Verified Human Credential",
     verification_description: "Verify you are a verified human",
     circuitId: "credentialAtomicQueryV3-beta.1",
     query: {
@@ -34,6 +34,20 @@ const VERIFICATION_CONFIGS = {
       type: "BasicPerson"
     }
   },
+
+  // Proof of Uniqueness
+  POU: {
+    name: "Uniqueness Credential",
+    verification_description: "Verify you are a unique human",
+    circuitId: "credentialAtomicQueryV3-beta.1",
+    query: {
+      allowedIssuers: [
+        "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD",
+      ],
+      context: "ipfs://QmcUEDa42Er4nfNFmGQVjiNYFaik6kvNQjfTeBrdSx83At",
+      type: "UniquenessCredential"
+    }
+  }
 };
 
 /**
