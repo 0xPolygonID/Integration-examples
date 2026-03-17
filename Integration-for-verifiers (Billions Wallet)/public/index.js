@@ -16,19 +16,19 @@ window.onload = () => {
     .then(data => {
       // Store verification data for wallet button
       verificationData = data;
-      
+
       // Create the universal wallet URL using the ver (used for both QR code and button)
       const jsonString = JSON.stringify(data);
       const base64Data = btoa(jsonString);
       const walletUrl = `https://wallet.billions.network/#i_m=${base64Data}`;
-      
+
       // Show and generate QR code
       const qrCodeEl = document.getElementById('qrcode');
       const walletButtonContainer = document.getElementById('walletButtonContainer');
-      
+
       qrCodeEl.style.display = 'block';
       walletButtonContainer.style.display = 'block';
-      
+
       // Check if QRCode library is loaded
       if (typeof QRCode !== 'undefined') {
         new QRCode(qrCodeEl, {
@@ -92,7 +92,7 @@ function showNotification(type, title, message, showReload = false) {
   // Set content
   titleEl.textContent = title;
   messageEl.textContent = message;
-  
+
   // Set icon and style based on type
   if (type === 'success') {
     icon.textContent = '✓';
@@ -115,7 +115,7 @@ function showNotification(type, title, message, showReload = false) {
   // Event listeners
   reloadBtn.onclick = () => window.location.reload();
   closeBtn.onclick = () => overlay.classList.remove('show');
-  
+
   // Close on overlay click
   overlay.onclick = (e) => {
     if (e.target === overlay) {
@@ -127,7 +127,7 @@ function showNotification(type, title, message, showReload = false) {
 // Function to poll status (optional based on your API)
 function pollStatus(requestId) {
   console.log(`🔄 Starting to poll status for request ID: ${requestId}`);
-  
+
   const checkStatus = () => {
     fetch(`${baseUrl}api/status/${requestId}`)
       .then((response) => response.json())
@@ -171,7 +171,7 @@ function pollStatus(requestId) {
 // Setup wallet button functionality
 function setupWalletButton(walletUrl) {
   const walletBtn = document.getElementById('openWalletBtn');
-  
+
   walletBtn.addEventListener('click', () => {
     if (!verificationData) {
       console.error('No verification data available');
@@ -186,10 +186,10 @@ function setupWalletButton(walletUrl) {
 
     try {
       console.log('Opening Billions wallet with URL:', walletUrl);
-      
+
       // Open the wallet URL in a new tab/window
       window.open(walletUrl, '_blank');
-      
+
     } catch (error) {
       console.error('Error creating wallet URL:', error);
       showNotification(
@@ -201,5 +201,3 @@ function setupWalletButton(walletUrl) {
     }
   });
 }
-
-
