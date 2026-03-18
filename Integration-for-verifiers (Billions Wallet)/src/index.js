@@ -10,8 +10,8 @@ const cors = require('cors');
 const { randomInt } = require('crypto');
 
 const { getConfig, createProofRequest } = require('./config/verification-configs');
-const redisService = require('./services/redis-service');
-const dbService = require('./services/db-service');
+const memoryStore = require('./services/memory-store');
+const nullifierStore = require('./services/nullifier-store');
 const logger = require('./services/logger');
 
 const app = express();
@@ -55,6 +55,8 @@ async function getVerifierInstance() {
   logger.info('Verifier initialized', { initTimeMs: Date.now() - t });
   return cachedVerifier;
 }
+
+app.set('trust proxy', 1);
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -132,12 +134,8 @@ app.get("/api/verification-request", async (req, res) => {
     const proofRequest = createProofRequest(USE_CASE, sessionId, nullifierSessionID);
     request.body.scope = [...(request.body.scope ?? []), proofRequest];
 
-    const authStored = await redisService.setAuthRequest(sessionId, request);
-    const statusStored = await redisService.setVerificationStatus(proofRequest.id, "pending");
-
-    if (!authStored || !statusStored) {
-      logger.warn('Redis storage failed, falling back to memory cache', { sessionId });
-    }
+    memoryStore.setAuthRequest(sessionId, request);
+    memoryStore.setVerificationStatus(proofRequest.id, "pending");
 
     logger.info('Verification request generated', { sessionId, useCase: USE_CASE });
     logger.logRequest(req, res, Date.now() - startTime);
@@ -149,58 +147,27 @@ app.get("/api/verification-request", async (req, res) => {
   }
 });
 
-app.get('/api/health', async (req, res) => {
-  try {
-    const redisHealthy = await redisService.healthCheck();
-    const redisStatus = redisService.getStatus();
-    const cacheStats = redisService.getCacheStats();
-
-    const hasMemoryFallback = cacheStats.totalEntries > 0;
-    const status = redisHealthy ? 'healthy' : (hasMemoryFallback ? 'degraded' : 'unhealthy');
-    const statusCode = redisHealthy ? 200 : (hasMemoryFallback ? 206 : 503);
-
-    return res.status(statusCode).json({
-      status,
-      timestamp: new Date().toISOString(),
-      redis: {
-        connected: redisHealthy,
-        host: process.env.REDIS_HOST,
-        circuitBreaker: redisStatus.circuitBreakerOpen,
-        failures: redisStatus.failures,
-        reconnectAttempts: redisStatus.reconnectAttempts
-      },
-      memoryCache: {
-        active: !redisHealthy && hasMemoryFallback,
-        size: cacheStats.totalEntries,
-        utilization: `${cacheStats.utilizationPercent}%`,
-        averageAge: `${Math.round(cacheStats.averageAgeMs / 1000)}s`
-      },
-      server: {
-        port,
-        useCase: USE_CASE,
-        config: currentConfig.name
-      }
-    });
-  } catch (error) {
-    logger.error('Error in /api/health', { error: error.message });
-    return res.status(503).json({ status: 'unhealthy', error: error.message });
-  }
+app.get('/api/health', (_req, res) => {
+  return res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    server: {
+      port,
+      useCase: USE_CASE,
+      config: currentConfig.name
+    }
+  });
 });
 
-app.get("/api/status/:id", async (req, res) => {
-  try {
-    const requestId = parseInt(req.params.id);
+app.get("/api/status/:id", (req, res) => {
+  const requestId = parseInt(req.params.id);
 
-    if (isNaN(requestId) || requestId <= 0) {
-      return res.status(400).json({ error: "Invalid request ID" });
-    }
-
-    const status = await redisService.getVerificationStatus(requestId) || "not_found";
-    return res.status(200).json({ requestId, status });
-  } catch (error) {
-    logger.error("Error in /api/status", { error: error.message });
-    return res.status(500).json({ error: "Internal server error" });
+  if (isNaN(requestId) || requestId <= 0) {
+    return res.status(400).json({ error: "Invalid request ID" });
   }
+
+  const status = memoryStore.getVerificationStatus(requestId) || "not_found";
+  return res.status(200).json({ requestId, status });
 });
 
 app.post("/api/callback", async (req, res) => {
@@ -227,7 +194,7 @@ app.post("/api/callback", async (req, res) => {
       return res.status(400).json({ error: "Token too large" });
     }
 
-    const authRequest = await redisService.getAuthRequest(sessionId);
+    const authRequest = await memoryStore.getAuthRequest(sessionId);
     if (!authRequest) {
       return res.status(400).json({ error: "Session not found or expired" });
     }
@@ -262,7 +229,7 @@ app.post("/api/callback", async (req, res) => {
     );
     const proofRequestId = scopeEntry?.id;
 
-    const { claimed } = await dbService.claimNullifier(nullifierHash, sessionId);
+    const { claimed } = await nullifierStore.claimNullifier(nullifierHash);
     if (!claimed) {
       logger.logSecurityEvent('REPLAY_ATTACK_BLOCKED', {
         nullifierHash: nullifierHash.substring(0, 20) + '...',
@@ -270,14 +237,14 @@ app.post("/api/callback", async (req, res) => {
       }, 'warn');
 
       if (proofRequestId) {
-        await redisService.setVerificationStatus(proofRequestId, "already_verified");
+        memoryStore.setVerificationStatus(proofRequestId, "already_verified");
       }
 
       return res.status(400).json({ error: "This identity has already been verified." });
     }
 
     if (proofRequestId) {
-      await redisService.setVerificationStatus(proofRequestId, "success");
+      memoryStore.setVerificationStatus(proofRequestId, "success");
     }
 
     logger.logVerification(sessionId, 'success', authResponse.from);
@@ -301,8 +268,7 @@ app.post("/api/callback", async (req, res) => {
 
 function validateEnvironment() {
   const required = [
-    'USE_CASE', 'VERIFIER_DID', 'NULLIFIER_SESSION_ID',
-    'HOST_URL', 'REDIS_HOST', 'REDIS_PORT', 'REDIS_USERNAME', 'REDIS_PASSWORD'
+    'USE_CASE', 'VERIFIER_DID', 'NULLIFIER_SESSION_ID', 'HOST_URL'
   ];
 
   const missing = required.filter(key => !process.env[key]);
@@ -321,31 +287,17 @@ function validateEnvironment() {
     throw new Error(`Invalid HOST_URL: ${process.env.HOST_URL}`);
   }
 
-  const redisPort = parseInt(process.env.REDIS_PORT);
-  if (isNaN(redisPort) || redisPort < 1 || redisPort > 65535) {
-    throw new Error(`Invalid REDIS_PORT: ${process.env.REDIS_PORT}`);
-  }
 }
 
 async function startServer() {
   try {
     validateEnvironment();
 
-    try {
-      await redisService.connect();
-      logger.info('Redis connected');
-    } catch (redisError) {
-      logger.warn('Redis unavailable at startup, running in degraded mode', {
-        error: redisError.message
-      });
-    }
-
     const server = app.listen(port, () => {
       logger.info('Server started', {
         port,
         useCase: USE_CASE,
-        nodeEnv: process.env.NODE_ENV,
-        redisConnected: redisService.isHealthy()
+        nodeEnv: process.env.NODE_ENV
       });
     });
 
@@ -361,8 +313,7 @@ async function startServer() {
 
   const shutdown = async (signal) => {
     logger.info(`${signal} received, shutting down`);
-    server.close(async () => {
-      await redisService.disconnect();
+    server.close(() => {
       process.exit(0);
     });
   };

@@ -2,8 +2,8 @@ module.exports = {
   apps: [{
     name: 'billions-verifier',
     script: 'src/index.js',
-    instances: 'max', // Use all CPU cores
-    exec_mode: 'cluster', // Enable cluster mode for load balancing
+    instances: 1,
+    exec_mode: 'fork',
 
     // Environment configuration
     env: {
