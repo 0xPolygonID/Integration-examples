@@ -1,12 +1,4 @@
-/**
- * Verification Configurations for Different Use Cases
- * 
- * This file contains all the credential verification configurations.
- * Simply change the USE_CASE to switch between different verification types.
- */
-
 const VERIFICATION_CONFIGS = {
-  // Proof of Humanity Configuration
   POH: {
     name: "Human Credential",
     verification_description: "Verify you are a human",
@@ -20,7 +12,6 @@ const VERIFICATION_CONFIGS = {
     }
   },
 
-  // Proof of Verified Humanity Configuration
   POVH: {
     name: "Verified Human Credential",
     verification_description: "Verify you are a verified human",
@@ -35,7 +26,6 @@ const VERIFICATION_CONFIGS = {
     }
   },
 
-  // Proof of Uniqueness
   POU: {
     name: "Uniqueness Credential",
     verification_description: "Verify you are a unique human",
@@ -50,56 +40,27 @@ const VERIFICATION_CONFIGS = {
   }
 };
 
-/**
- * Get configuration for a specific use case
- * @param {string} useCase - The use case key (e.g., 'POU', 'KYC', 'AGE_VERIFICATION')
- * @returns {Object} Configuration object for the specified use case
- */
 function getConfig(useCase) {
   const config = VERIFICATION_CONFIGS[useCase.toUpperCase()];
-  
   if (!config) {
-    const available = Object.keys(VERIFICATION_CONFIGS).join(', ');
-    throw new Error(`Unknown verification use case: ${useCase}. Available options: ${available}`);
+    throw new Error(`Unknown use case: ${useCase}. Available: ${Object.keys(VERIFICATION_CONFIGS).join(', ')}`);
   }
-  
-  return {
-    ...config,
-    useCase: useCase.toUpperCase()
-  };
+  return { ...config, useCase: useCase.toUpperCase() };
 }
 
-/**
- * Create a proof request for a specific use case
- * @param {string} useCase - The use case key
- * @param {number} sessionId - Session ID for the request
- * @param {string} nullifier - Nullifier for the session
- * @returns {Object} Proof request object
- */
 function createProofRequest(useCase, sessionId, nullifier) {
   const config = getConfig(useCase);
-  
   return {
     circuitId: config.circuitId,
     id: sessionId,
-    params: {
-      nullifierSessionId: nullifier.toString()
-    },
+    params: { nullifierSessionId: nullifier.toString() },
     query: config.query
   };
-}
-
-/**
- * Get all available use cases
- * @returns {Array} Array of available use case keys
- */
-function getAvailableUseCases() {
-  return Object.keys(VERIFICATION_CONFIGS);
 }
 
 module.exports = {
   VERIFICATION_CONFIGS,
   getConfig,
   createProofRequest,
-  getAvailableUseCases
+  getAvailableUseCases: () => Object.keys(VERIFICATION_CONFIGS)
 };

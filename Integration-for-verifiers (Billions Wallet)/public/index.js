@@ -55,11 +55,8 @@ window.onload = () => {
       // The request ID should be in the proof request scope
       const proofRequest = data.body?.scope?.find(s => s.id);
       if (proofRequest && proofRequest.id) {
-        console.log(`📋 Found request ID: ${proofRequest.id}`);
         pollStatus(proofRequest.id);
       } else {
-        console.error("❌ Could not find request ID in verification request");
-        console.log("Available data:", data);
         showNotification(
           'error',
           'Configuration Error',
@@ -124,31 +121,44 @@ function showNotification(type, title, message, showReload = false) {
   };
 }
 
-// Function to poll status (optional based on your API)
-function pollStatus(requestId) {
-  console.log(`🔄 Starting to poll status for request ID: ${requestId}`);
+function disableVerificationUI() {
+  const qrCodeEl = document.getElementById('qrcode');
+  const walletBtn = document.getElementById('openWalletBtn');
+  const subheader = document.querySelector('.subheader');
 
+  if (qrCodeEl) qrCodeEl.style.opacity = '0.2';
+  if (walletBtn) {
+    walletBtn.disabled = true;
+    walletBtn.textContent = 'Already Verified';
+  }
+  if (subheader) subheader.textContent = 'This identity has already been verified.';
+}
+
+function pollStatus(requestId) {
   const checkStatus = () => {
     fetch(`${baseUrl}api/status/${requestId}`)
       .then((response) => response.json())
       .then((data) => {
-        console.log("Status:", data.status);
         if (data.status === "pending") {
-          console.log("⏳ Still pending, checking again in 2 seconds...");
           setTimeout(checkStatus, 2000);
         } else if (data.status === "success") {
-          console.log("✅ Verification completed successfully!");
           showNotification(
             'success',
             'Verification Complete!',
             'Your identity has been successfully verified using Billions. You can now reload the page to continue.',
             true
           );
+        } else if (data.status === "already_verified") {
+          disableVerificationUI();
+          showNotification(
+            'error',
+            'Already Verified',
+            'This identity has already been used for verification. Each identity can only verify once.',
+            false
+          );
         } else if (data.status === "not_found") {
-          console.log("❌ Request not found");
-          setTimeout(checkStatus, 2000); // Keep trying in case of timing issues
+          setTimeout(checkStatus, 2000);
         } else {
-          console.log(`❓ Unknown status: ${data.status}`);
           setTimeout(checkStatus, 2000);
         }
       })
@@ -185,13 +195,8 @@ function setupWalletButton(walletUrl) {
     }
 
     try {
-      console.log('Opening Billions wallet with URL:', walletUrl);
-
-      // Open the wallet URL in a new tab/window
       window.open(walletUrl, '_blank');
-
     } catch (error) {
-      console.error('Error creating wallet URL:', error);
       showNotification(
         'error',
         'URL Error',
