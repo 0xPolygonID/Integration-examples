@@ -42,7 +42,7 @@ const VERIFICATION_CONFIGS = {
     circuitId: "credentialAtomicQueryV3-beta.1",
     query: {
       allowedIssuers: [
-        "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD",
+        "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD","did:iden3:billions:main:2VwqkgA2dNEwsnmojaay7C5jJEb8ZygecqCSU3xVfm"
       ],
       context: "ipfs://QmcUEDa42Er4nfNFmGQVjiNYFaik6kvNQjfTeBrdSx83At",
       type: "UniquenessCredential"
@@ -97,9 +97,61 @@ function getAvailableUseCases() {
   return Object.keys(VERIFICATION_CONFIGS);
 }
 
+
+const requestMap = new Map();
+const userVerificationMap = new Map();
+const statusMap = new Map();
+
+const { Mutex } = require('async-mutex');
+const verificationMutex = new Mutex();
+
+function storeSession(sessionId, authRequest) {
+  requestMap.set(sessionId, authRequest);
+}
+
+function getSession(sessionId) {
+  return requestMap.get(sessionId);
+}
+
+function setStatus(requestId, status) {
+  statusMap.set(requestId, status);
+}
+
+function getStatus(requestId) {
+  return statusMap.get(requestId);
+}
+
+/**
+ * Atomically checks whether a nullifier has already been verified and, if not,
+ * marks it as verified. Returns true if the nullifier was successfully claimed,
+ * false if it was already verified (replay attack).
+ *
+ * @param {string|BigInt} nullifier
+ * @param {number} sessionId
+ * @returns {Promise<boolean>}
+ */
+async function checkAndSetVerified(nullifier, sessionId) {
+  const release = await verificationMutex.acquire();
+  try {
+    const existing = userVerificationMap.get(nullifier);
+    if (existing && existing.verified) {
+      return false;
+    }
+    userVerificationMap.set(nullifier, { sessionId, verified: true });
+    return true;
+  } finally {
+    release();
+  }
+}
+
 module.exports = {
   VERIFICATION_CONFIGS,
   getConfig,
   createProofRequest,
-  getAvailableUseCases
+  getAvailableUseCases,
+  storeSession,
+  getSession,
+  setStatus,
+  getStatus,
+  checkAndSetVerified,
 };
