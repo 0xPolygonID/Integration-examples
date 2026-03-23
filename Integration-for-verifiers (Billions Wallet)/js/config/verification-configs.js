@@ -12,12 +12,14 @@
 // Use the PRODUCTION Billions wallet when verifying against production issuers.
 // Use the DEVELOPMENT Billions wallet when verifying against development issuers.
 
+const { CircuitId } = require('@0xpolygonid/js-sdk');
+
 const VERIFICATION_CONFIGS = {
   // Proof of Humanity Configuration
   POH: {
     name: "Human Credential",
     verification_description: "Verify you are a human",
-    circuitId: "credentialAtomicQueryV3",
+    circuitId: CircuitId.AtomicQueryV3Stable,
     query: {
       allowedIssuers: [
         "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD" // production issuer
@@ -31,7 +33,7 @@ const VERIFICATION_CONFIGS = {
   POVH: {
     name: "Verified Human Credential",
     verification_description: "Verify you are a verified human",
-    circuitId: "credentialAtomicQueryV3",
+    circuitId: CircuitId.AtomicQueryV3Stable,
     query: {
       allowedIssuers: [
         "did:iden3:billions:test:2VxnoiNqdMPxzqp7X6MV7GfoPkDZ7ij499mDZAo72y", // production issuer — use this in production
@@ -46,7 +48,7 @@ const VERIFICATION_CONFIGS = {
   POU: {
     name: "Uniqueness Credential",
     verification_description: "Verify you are a unique human",
-    circuitId: "credentialAtomicQueryV3", // also supported: "credentialAtomicQueryV3-16-16-64"
+    circuitId: CircuitId.AtomicQueryV3Stable, // also supported: "credentialAtomicQueryV3-16-16-64"
     query: {
       allowedIssuers: [
         "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD", // development issuer — remove this before going to production

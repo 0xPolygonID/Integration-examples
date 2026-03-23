@@ -20,7 +20,7 @@ const { auth, resolver } = require("@iden3/js-iden3-auth");
 const getRawBody = require("raw-body");
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-const { CircuitId, AtomicQueryV3PubSignals } = require('@0xpolygonid/js-sdk');
+const { CircuitId, AtomicQueryV3PubSignals, getGroupedCircuitIdsWithSubVersions } = require('@0xpolygonid/js-sdk');
 const { randomInt } = require('crypto');
 
 // Import configuration system
@@ -191,8 +191,9 @@ app.post("/api/callback", async (req, res) => {
     authResponse = await verifier.fullVerify(tokenStr, authRequest, opts);
   
      // Prevent replay attack: check if this user's nullifier is already verified
+     const atomicQueryV3Family = getGroupedCircuitIdsWithSubVersions(CircuitId.AtomicQueryV3Stable);
      const nullifierProof = authResponse.body.scope.find(
-      (s) => s.circuitId === "credentialAtomicQueryV3-16-16-64" && s.id === sessionId
+      (s) => atomicQueryV3Family.includes(s.circuitId) && s.id === sessionId
     );
     if (!nullifierProof) {
       return res.status(400).json({ message: "No valid nullifier proof found in response." });
@@ -211,7 +212,7 @@ app.post("/api/callback", async (req, res) => {
     }
 
     // Update status to success after successful verification
-    const proofRequestId = authRequest.body.scope.find(s => s.circuitId === "credentialAtomicQueryV3-16-16-64")?.id;
+    const proofRequestId = authRequest.body.scope.find(s => atomicQueryV3Family.includes(s.circuitId))?.id;
     if (proofRequestId) {
       setStatus(proofRequestId, "success");
     }
