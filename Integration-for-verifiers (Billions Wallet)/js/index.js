@@ -115,7 +115,7 @@ app.get("/api/verification-request", async (req, res) => {
 
     storeSession(sessionId, request);
 
-    setStatus(proofRequest.id, "pending");
+    setStatus(sessionId, "pending");
 
     return res.status(200).json(request);
   } catch (err) {
@@ -126,14 +126,14 @@ app.get("/api/verification-request", async (req, res) => {
 
 /**
  * GET /api/status/:id
- * Returns the verification status for a given request ID.
+ * Returns the verification status for a given session Id.
  */
 app.get("/api/status/:id", (req, res) => {
-  const requestId = parseInt(req.params.id);
-  const status = getStatus(requestId) || "not_found";
+  const sessionId = parseInt(req.params.id);
+  const status = getStatus(sessionId) || "not_found";
 
   return res.status(200).json({
-    requestId: requestId,
+    requestId: sessionId,
     status: status,
   });
 });
@@ -212,10 +212,7 @@ app.post("/api/callback", async (req, res) => {
     }
 
     // Update status to success after successful verification
-    const proofRequestId = authRequest.body.scope.find(s => atomicQueryV3Family.includes(s.circuitId))?.id;
-    if (proofRequestId) {
-      setStatus(proofRequestId, "success");
-    }
+    setStatus(sessionId, "success");
 
     console.log(`User ${authResponse.from} successfully verified for ${USE_CASE} (${currentConfig.name})`);  
     
@@ -226,13 +223,12 @@ app.post("/api/callback", async (req, res) => {
   return res
     .status(200)
     .set("Content-Type", "application/json")
-    .send(authResponse);
 });
 
 // Start the server
 const server = app.listen(port, () => {
-  console.log(`🚀 Privado verifier backend running on port ${port}`);
-  console.log(`🔧 Using verification configuration: ${USE_CASE} (${currentConfig.name})`);
+  console.log(`Privado verifier backend running on port ${port}`);
+  console.log(`Using verification configuration: ${USE_CASE} (${currentConfig.name})`);
 });
 
 // Graceful shutdown
