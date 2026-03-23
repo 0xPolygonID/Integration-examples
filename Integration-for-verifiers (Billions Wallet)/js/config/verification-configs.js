@@ -17,7 +17,7 @@ const VERIFICATION_CONFIGS = {
   POH: {
     name: "Human Credential",
     verification_description: "Verify you are a human",
-    circuitId: "credentialAtomicQueryV3", // also supported: "credentialAtomicQueryV3-16-16-64"
+    circuitId: "credentialAtomicQueryV3",
     query: {
       allowedIssuers: [
         "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD" // production issuer
@@ -31,7 +31,7 @@ const VERIFICATION_CONFIGS = {
   POVH: {
     name: "Verified Human Credential",
     verification_description: "Verify you are a verified human",
-    circuitId: "credentialAtomicQueryV3", // also supported: "credentialAtomicQueryV3-16-16-64"
+    circuitId: "credentialAtomicQueryV3",
     query: {
       allowedIssuers: [
         "did:iden3:billions:test:2VxnoiNqdMPxzqp7X6MV7GfoPkDZ7ij499mDZAo72y", // production issuer — use this in production

@@ -180,7 +180,6 @@ app.post("/api/callback", async (req, res) => {
   // Execute verification
   const verifier = await auth.Verifier.newVerifier({
     stateResolver: resolvers,
-    circuitsDir: path.join(__dirname, "../keys"),
     ipfsGatewayURL: "https://ipfs.io",
   });
 
@@ -193,7 +192,7 @@ app.post("/api/callback", async (req, res) => {
   
      // Prevent replay attack: check if this user's nullifier is already verified
      const nullifierProof = authResponse.body.scope.find(
-      (s) => s.circuitId === "credentialAtomicQueryV3" && s.id === sessionId
+      (s) => s.circuitId === "credentialAtomicQueryV3-16-16-64" && s.id === sessionId
     );
     if (!nullifierProof) {
       return res.status(400).json({ message: "No valid nullifier proof found in response." });
@@ -207,11 +206,12 @@ app.post("/api/callback", async (req, res) => {
 
     const claimed = await checkAndSetVerified(nullifier);
     if (!claimed) {
+      setStatus(sessionId, "already_verified");
       return res.status(400).json({ message: "User with this did has been verified already." });
     }
 
     // Update status to success after successful verification
-    const proofRequestId = authRequest.body.scope.find(s => s.circuitId === "credentialAtomicQueryV3")?.id;
+    const proofRequestId = authRequest.body.scope.find(s => s.circuitId === "credentialAtomicQueryV3-16-16-64")?.id;
     if (proofRequestId) {
       setStatus(proofRequestId, "success");
     }

@@ -10,8 +10,8 @@
     "watch": "tsc --watch"
   },
   "dependencies": {
-    "@0xpolygonid/js-sdk": "^1.31.1",
-    "@iden3/js-iden3-auth": "1.10.1",
+    "@0xpolygonid/js-sdk": "^1.43.0",
+    "@iden3/js-iden3-auth": "1.14.0",
     "async-mutex": "^0.5.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
