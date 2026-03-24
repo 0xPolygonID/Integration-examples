@@ -189,8 +189,11 @@ app.post("/api/callback", async (req, res) => {
       AcceptedStateTransitionDelay: 5 * 60 * 1000, // 5 minutes
     };
     authResponse = await verifier.fullVerify(tokenStr, authRequest, opts);
-  
-     // Prevent replay attack: check if this user's nullifier is already verified
+    // Anti-Replay Attack Prevention
+    // Extract the nullifier from the proof and check if it has been used before.
+    // A nullifier is a unique value derived from the user's identity and the NULLIFIER_SESSION_ID.
+    // It is the same every time the same user verifies, allowing us to detect and reject
+    // duplicate proof submissions. This is a critical security measure to prevent replay attacks.
      const atomicQueryV3Family = getGroupedCircuitIdsWithSubVersions(CircuitId.AtomicQueryV3Stable);
      const nullifierProof = authResponse.body.scope.find(
       (s) => atomicQueryV3Family.includes(s.circuitId) && s.id === sessionId
