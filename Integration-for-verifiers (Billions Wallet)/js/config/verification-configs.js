@@ -48,7 +48,7 @@ const VERIFICATION_CONFIGS = {
   POU: {
     name: "Uniqueness Credential",
     verification_description: "Verify you are a unique human",
-    circuitId: CircuitId.AtomicQueryV3Stable, // also supported: "credentialAtomicQueryV3-16-16-64"
+    circuitId: CircuitId.AtomicQueryV3Stable,
     query: {
       allowedIssuers: [
         "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD", // development issuer — remove this before going to production
