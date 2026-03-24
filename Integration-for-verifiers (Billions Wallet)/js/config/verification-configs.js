@@ -5,15 +5,24 @@
  * Simply change the USE_CASE to switch between different verification types.
  */
 
+// ⚠️  IMPORTANT: Each use case lists both a production and a development issuer DID.
+// Use only the PRODUCTION issuer DID in production — the development issuer issues test credentials
+// that will not be accepted in production, and including it allows credentials that should never
+// pass a production check.
+// Use the PRODUCTION Billions wallet when verifying against production issuers.
+// Use the DEVELOPMENT Billions wallet when verifying against development issuers.
+
+const { CircuitId } = require('@0xpolygonid/js-sdk');
+
 const VERIFICATION_CONFIGS = {
   // Proof of Humanity Configuration
   POH: {
     name: "Human Credential",
     verification_description: "Verify you are a human",
-    circuitId: "credentialAtomicQueryV3-beta.1",
+    circuitId: CircuitId.AtomicQueryV3Stable,
     query: {
       allowedIssuers: [
-        "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD"
+        "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD" // production issuer
       ],
       context: "ipfs://QmcomGJQwJDCg3RE6FjsFYCjjMSTWJXY3fUWeq43Mc5CCJ",
       type: "LivenessCredential"
@@ -24,11 +33,11 @@ const VERIFICATION_CONFIGS = {
   POVH: {
     name: "Verified Human Credential",
     verification_description: "Verify you are a verified human",
-    circuitId: "credentialAtomicQueryV3-beta.1",
+    circuitId: CircuitId.AtomicQueryV3Stable,
     query: {
       allowedIssuers: [
-        "did:iden3:billions:test:2VxnoiNqdMPxzqp7X6MV7GfoPkDZ7ij499mDZAo72y",
-        "did:iden3:billions:test:2VxnoiNqdMPyMXmEKpP8wGqrY6Vb7mgeQQUywyVeWe"
+        "did:iden3:billions:test:2VxnoiNqdMPxzqp7X6MV7GfoPkDZ7ij499mDZAo72y", // production issuer — use this in production
+        "did:iden3:billions:test:2VxnoiNqdMPyMXmEKpP8wGqrY6Vb7mgeQQUywyVeWe"  // development issuer — remove this before going to production
       ],
       context: "ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL",
       type: "BasicPerson"
@@ -39,10 +48,11 @@ const VERIFICATION_CONFIGS = {
   POU: {
     name: "Uniqueness Credential",
     verification_description: "Verify you are a unique human",
-    circuitId: "credentialAtomicQueryV3-beta.1",
+    circuitId: CircuitId.AtomicQueryV3Stable,
     query: {
       allowedIssuers: [
-        "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD",
+        "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD", // development issuer — remove this before going to production
+        "did:iden3:billions:main:2VwqkgA2dNEwsnmojaay7C5jJEb8ZygecqCSU3xVfm"  // production issuer — use this in production
       ],
       context: "ipfs://QmcUEDa42Er4nfNFmGQVjiNYFaik6kvNQjfTeBrdSx83At",
       type: "UniquenessCredential"
@@ -97,9 +107,60 @@ function getAvailableUseCases() {
   return Object.keys(VERIFICATION_CONFIGS);
 }
 
+
+const requestMap = new Map();
+const userVerificationMap = new Map();
+const statusMap = new Map();
+
+const { Mutex } = require('async-mutex');
+const verificationMutex = new Mutex();
+
+function storeSession(sessionId, authRequest) {
+  requestMap.set(sessionId, authRequest);
+}
+
+function getSession(sessionId) {
+  return requestMap.get(sessionId);
+}
+
+function setStatus(requestId, status) {
+  statusMap.set(requestId, status);
+}
+
+function getStatus(requestId) {
+  return statusMap.get(requestId);
+}
+
+/**
+ * Atomically checks whether a nullifier has already been verified and, if not,
+ * marks it as verified. Returns true if the nullifier was successfully claimed,
+ * false if it was already verified (replay attack).
+ *
+ * @param {string|BigInt} nullifier
+ * @returns {Promise<boolean>}
+ */
+async function checkAndSetVerified(nullifier) {
+  const release = await verificationMutex.acquire();
+  try {
+    const existing = userVerificationMap.get(nullifier);
+    if (existing) {
+      return false;
+    }
+    userVerificationMap.set(nullifier, {});
+    return true;
+  } finally {
+    release();
+  }
+}
+
 module.exports = {
   VERIFICATION_CONFIGS,
   getConfig,
   createProofRequest,
-  getAvailableUseCases
+  getAvailableUseCases,
+  storeSession,
+  getSession,
+  setStatus,
+  getStatus,
+  checkAndSetVerified,
 };

@@ -54,6 +54,41 @@ You should see:
 
 **Ready to integrate Billions verification into your application? Start with this example and customize it for your needs!** 🚀
 
+---
+
+## Going Production-Ready
+
+This example uses in-memory maps for sessions, status, and nullifier tracking. These are lost on restart and cannot be shared across multiple server instances. Below is guidance on what to replace them with.
+
+### Sessions and status — use Redis
+
+`requestMap` and `statusMap` hold short-lived data tied to a single verification flow. Redis is a natural fit: it supports TTL-based expiry, is fast, and works across multiple server instances.
+
+Use the `ioredis` npm package to connect. Store session and status keys with a TTL (e.g. 10 minutes) so stale entries are cleaned up automatically.
+
+### Nullifier replay protection — use a relational database
+
+`userVerificationMap` must be **permanent**. A nullifier that has been claimed must stay claimed forever, even across restarts and deployments.
+
+Use PostgreSQL (or any relational DB) with a `verified_nullifiers` table where `nullifier` is the primary key. Replace the in-process mutex with a database-level atomic upsert (`INSERT ... ON CONFLICT DO NOTHING`) — this is safe across multiple server instances and removes the need for the mutex entirely.
+
+### Deployment
+
+Run the verifier, Redis, and PostgreSQL as separate services — Docker Compose works well for this. Connect them via environment variables (`REDIS_URL`, `DATABASE_URL`).
+
+### Checklist before going to production
+
+- [ ] Replace `requestMap` / `statusMap` with Redis (with TTL)
+- [ ] Replace `userVerificationMap` with a database table
+- [ ] Set `CORS` origin to your actual frontend domain (not `*`)
+- [ ] Use HTTPS (terminate TLS at a load balancer or reverse proxy)
+- [ ] Run behind a process manager (`pm2`) or container orchestrator
+- [ ] Set `NODE_ENV=production`
+- [ ] Store all secrets in environment variables, never in code
+- [ ] Add database connection pooling and error handling
+
+---
+
 ## License
 MIT
 

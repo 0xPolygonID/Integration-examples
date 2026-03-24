@@ -164,7 +164,6 @@ app.post("/api/callback", async (req, res) => {
   // Execute verification
   const verifier = await auth.Verifier.newVerifier({
     stateResolver: resolvers,
-    circuitsDir: path.join(__dirname, process.env.KEY_DIR || "../keys"),
     ipfsGatewayURL: process.env.IPFS_GATEWAY || "https://ipfs.io",
   });
 

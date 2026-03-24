@@ -20,11 +20,19 @@ const { auth, resolver } = require("@iden3/js-iden3-auth");
 const getRawBody = require("raw-body");
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-const { CircuitId, AtomicQueryV3PubSignals } = require('@0xpolygonid/js-sdk');
+const { CircuitId, AtomicQueryV3PubSignals, getGroupedCircuitIdsWithSubVersions } = require('@0xpolygonid/js-sdk');
 const { randomInt } = require('crypto');
 
 // Import configuration system
-const { getConfig, createProofRequest } = require('./config/verification-configs');
+const {
+  getConfig,
+  createProofRequest,
+  storeSession,
+  getSession,
+  setStatus,
+  getStatus,
+  checkAndSetVerified,
+} = require('./config/verification-configs');
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -66,10 +74,6 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files (e.g., QR code page)
 app.use(express.static("../static"));
 
-// In-memory maps for session and user verification
-const requestMap = new Map(); // sessionId -> authRequest
-const userVerificationMap = new Map(); // userDid -> { sessionId, verified }
-const statusMap = new Map(); // requestId -> status
 
 
 
@@ -109,11 +113,9 @@ app.get("/api/verification-request", async (req, res) => {
     const scope = request.body.scope ?? [];
     request.body.scope = [...scope, proofRequest];
 
-    // Store auth request in map associated with session ID
-    requestMap.set(sessionId, request);
+    storeSession(sessionId, request);
 
-    // Initialize status as pending
-    statusMap.set(proofRequest.id, "pending");
+    setStatus(sessionId, "pending");
 
     return res.status(200).json(request);
   } catch (err) {
@@ -124,14 +126,14 @@ app.get("/api/verification-request", async (req, res) => {
 
 /**
  * GET /api/status/:id
- * Returns the verification status for a given request ID.
+ * Returns the verification status for a given session Id.
  */
 app.get("/api/status/:id", (req, res) => {
-  const requestId = parseInt(req.params.id);
-  const status = statusMap.get(requestId) || "not_found";
+  const sessionId = parseInt(req.params.id);
+  const status = getStatus(sessionId) || "not_found";
 
   return res.status(200).json({
-    requestId: requestId,
+    requestId: sessionId,
     status: status,
   });
 });
@@ -154,7 +156,7 @@ app.post("/api/callback", async (req, res) => {
 
 
   // Fetch authRequest from sessionID
-  const authRequest = requestMap.get(sessionId);
+  const authRequest = getSession(sessionId);
   if (!authRequest) {
     return res.status(400).json({ message: "Invalid or expired sessionId" });
   }
@@ -178,7 +180,6 @@ app.post("/api/callback", async (req, res) => {
   // Execute verification
   const verifier = await auth.Verifier.newVerifier({
     stateResolver: resolvers,
-    circuitsDir: path.join(__dirname, "../keys"),
     ipfsGatewayURL: "https://ipfs.io",
   });
 
@@ -190,8 +191,9 @@ app.post("/api/callback", async (req, res) => {
     authResponse = await verifier.fullVerify(tokenStr, authRequest, opts);
   
      // Prevent replay attack: check if this user's nullifier is already verified
+     const atomicQueryV3Family = getGroupedCircuitIdsWithSubVersions(CircuitId.AtomicQueryV3Stable);
      const nullifierProof = authResponse.body.scope.find(
-      (s) => s.circuitId === "credentialAtomicQueryV3-beta.1" && s.id === sessionId
+      (s) => atomicQueryV3Family.includes(s.circuitId) && s.id === sessionId
     );
     if (!nullifierProof) {
       return res.status(400).json({ message: "No valid nullifier proof found in response." });
@@ -203,23 +205,16 @@ app.post("/api/callback", async (req, res) => {
 
     const nullifier = pubSignals.nullifier;
 
-    if (userVerificationMap.has(nullifier) && userVerificationMap.get(nullifier).verified) {
+    const claimed = await checkAndSetVerified(nullifier);
+    if (!claimed) {
+      setStatus(sessionId, "already_verified");
       return res.status(400).json({ message: "User with this did has been verified already." });
     }
-  
-    userVerificationMap.set(nullifier, {
-      sessionId: sessionId,
-      verified: true,
-    });
-    
-    // Update status to success after successful verification
-    // Get the proof request ID from the authRequest
-    const proofRequestId = authRequest.body.scope.find(s => s.circuitId === "credentialAtomicQueryV3-beta.1")?.id;
-    if (proofRequestId) {
-      statusMap.set(proofRequestId, "success");
-    }
 
-    console.log(`✅ User ${authResponse.from} successfully verified for ${USE_CASE} (${currentConfig.name})`);  
+    // Update status to success after successful verification
+    setStatus(sessionId, "success");
+
+    console.log(`User ${authResponse.from} successfully verified for ${USE_CASE} (${currentConfig.name})`);  
     
   } catch (error) {
     console.error("Error in /api/callback:", error);
@@ -228,13 +223,12 @@ app.post("/api/callback", async (req, res) => {
   return res
     .status(200)
     .set("Content-Type", "application/json")
-    .send(authResponse);
 });
 
 // Start the server
 const server = app.listen(port, () => {
-  console.log(`🚀 Privado verifier backend running on port ${port}`);
-  console.log(`🔧 Using verification configuration: ${USE_CASE} (${currentConfig.name})`);
+  console.log(`Privado verifier backend running on port ${port}`);
+  console.log(`Using verification configuration: ${USE_CASE} (${currentConfig.name})`);
 });
 
 // Graceful shutdown
