@@ -5,12 +5,10 @@
  * Simply change the USE_CASE to switch between different verification types.
  */
 
-// ⚠️  IMPORTANT: Each use case lists both a production and a development issuer DID.
-// Use only the PRODUCTION issuer DID in production — the development issuer issues test credentials
-// that will not be accepted in production, and including it allows credentials that should never
-// pass a production check.
-// Use the PRODUCTION Billions wallet when verifying against production issuers.
-// Use the DEVELOPMENT Billions wallet when verifying against development issuers.
+// ⚠️  IMPORTANT: The allowedIssuers for each use case must be set to the correct issuer DID.
+// Using a development issuer DID in production will cause verification failures, as credentials
+// issued on development will not be accepted by the production issuer and vice versa.
+// Contact our integration team to get the correct issuer DID for your environment.
 
 const { CircuitId } = require('@0xpolygonid/js-sdk');
 
@@ -22,7 +20,7 @@ const VERIFICATION_CONFIGS = {
     circuitId: CircuitId.AtomicQueryV3Stable,
     query: {
       allowedIssuers: [
-        "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD" // production issuer
+        "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD",
       ],
       context: "ipfs://QmcomGJQwJDCg3RE6FjsFYCjjMSTWJXY3fUWeq43Mc5CCJ",
       type: "LivenessCredential"
@@ -36,8 +34,8 @@ const VERIFICATION_CONFIGS = {
     circuitId: CircuitId.AtomicQueryV3Stable,
     query: {
       allowedIssuers: [
-        "did:iden3:billions:test:2VxnoiNqdMPxzqp7X6MV7GfoPkDZ7ij499mDZAo72y", // production issuer — use this in production
-        "did:iden3:billions:test:2VxnoiNqdMPyMXmEKpP8wGqrY6Vb7mgeQQUywyVeWe"  // development issuer — remove this before going to production
+        "did:iden3:billions:test:2VxnoiNqdMPxzqp7X6MV7GfoPkDZ7ij499mDZAo72y",
+        "did:iden3:billions:test:2VxnoiNqdMPyMXmEKpP8wGqrY6Vb7mgeQQUywyVeWe"
       ],
       context: "ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL",
       type: "BasicPerson"
@@ -51,8 +49,7 @@ const VERIFICATION_CONFIGS = {
     circuitId: CircuitId.AtomicQueryV3Stable,
     query: {
       allowedIssuers: [
-        "did:iden3:billions:main:2VmnvBNtpxCUbiEH3R2DNuXqPxuaBQJsG6mwU1J8PD", // development issuer — remove this before going to production
-        "did:iden3:billions:main:2VwqkgA2dNEwsnmojaay7C5jJEb8ZygecqCSU3xVfm"  // production issuer — use this in production
+        "did:iden3:billions:main:...", // contact our integration team
       ],
       context: "ipfs://QmcUEDa42Er4nfNFmGQVjiNYFaik6kvNQjfTeBrdSx83At",
       type: "UniquenessCredential"
